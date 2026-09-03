@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: tad-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-123}
+      POSTGRES_DB: ${POSTGRES_DB:-ithub}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tad-backend
+    restart: always
+    ports:
+      - "${PORT:-3000}:${PORT:-3000}"
+    depends_on:
+      - postgres
+    env_file:
+      - .env
+    environment:
+      # Override the DATABASE_URL to point to the postgres container inside the docker network
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-123}@postgres:5432/${POSTGRES_DB:-ithub}?schema=public
+    volumes:
+      - ./uploads:/usr/src/app/uploads
+
+volumes:
+  postgres_data:
